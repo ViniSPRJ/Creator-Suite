@@ -83,3 +83,48 @@ Use linguagem jurídica formal brasileira. O contrato deve ser válido e profiss
     return { success: false, message: errorMessage };
   }
 }
+
+export async function rewriteScript(text: string, tone: string) {
+  try {
+    if (!process.env.GEMINI_API_KEY) {
+      return { success: false, message: 'GEMINI_API_KEY não configurada' };
+    }
+
+    if (!text || text.trim() === '') {
+      return { success: false, message: 'Texto não pode estar vazio' };
+    }
+
+    const toneMap: Record<string, string> = {
+      'casual': 'Divertido e descontraído, como se estivesse conversando com um amigo',
+      'profissional': 'Sério e profissional, com credibilidade e autoridade',
+      'controvérsia': 'Polêmico e provocativo, com frases que geram discussão e engajamento'
+    };
+
+    const selectedTone = toneMap[tone] || toneMap['casual'];
+
+    const prompt = `Aja como um roteirista de YouTube experiente. Reescreva o texto abaixo para ser falado em vídeo.
+
+Tom: ${selectedTone}
+
+Instruções:
+- Mantenha o texto curto e direto
+- Use frases de impacto que prendem a atenção
+- Remova palavras difíceis e jargões desnecessários
+- Escreva como se estivesse falando, não escrevendo
+- Adicione quebras naturais para respiração
+- Retorne APENAS o texto reescrito, sem explicações ou comentários adicionais
+
+Texto Original:
+${text}`;
+
+    const result = await geminiModel.generateContent(prompt);
+    const response = await result.response;
+    const rewrittenText = response.text();
+
+    return { success: true, text: rewrittenText };
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+    console.error('Erro ao reescrever script:', errorMessage);
+    return { success: false, message: errorMessage };
+  }
+}
